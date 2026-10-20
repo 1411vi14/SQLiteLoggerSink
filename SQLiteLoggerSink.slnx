@@ -1,0 +1,4 @@
+<Solution>
+	<Project Path="LoggerSink/LoggerSink.csproj" />
+	<Project Path="WebApi/WebApi.csproj" />
+</Solution>
