@@ -2,10 +2,12 @@ using Microsoft.Extensions.Logging;
 
 namespace LoggerSink.Options;
 
+// TODO: Mit Microsoft.Extensions.Logging.LogLevel kompatibel?
 public class LogFilterOptions
 {
-	public const string SectionName = "LogFilters";
-	private IReadOnlyCollection<LogFilter> Filters { get; set; } = [];
+	public const string SectionName = "Logging";
+	public Dictionary<string, LogLevel> LogLevel { get; set; } = []; // Microsoft.Extensions.Logging.LogLevel
+	public IReadOnlyCollection<LogFilter> Filters { get; set; } = [];
 
 	public class LogFilter
 	{

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 
 namespace LoggerSink.Model;
 
+// TODO: Migrations + Indizes
 public partial class Log
 {
 	public sealed class Event
