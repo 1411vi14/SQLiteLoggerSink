@@ -9,6 +9,6 @@ public readonly record struct LogEvent
 	public string CategoryName { get; init; }
 	public Exception? Exception { get; init; }
 	public string MessageTemplate { get; init; }
-	public IReadOnlyCollection<KeyValuePair<string, object>> Properties { get; init; }
+	public IReadOnlyCollection<KeyValuePair<string, object?>> Properties { get; init; }
 	public IReadOnlyCollection<string> Scopes { get; init; }
 }

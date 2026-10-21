@@ -20,7 +20,7 @@ public static class LoggingBuilderExtensions
 		{
 			builder.Services.Configure(nameof(SqliteLogSink), sqliteConnectionConfigure);
 			builder.Services.Configure(configure);
-			builder.Services.AddOptions<LogFilterOptions>(LogFilterOptions.SectionName); // TODO: Funktioniert das?
+			builder.Services.AddOptions<LogFilterOptions>().BindConfiguration(LogFilterOptions.SectionName);
 			builder.Services.AddSingleton<ILoggerProvider, LoggerSinkProvider>();
 			builder.Services.AddSingleton<Channel<LogEvent>>(sp =>
 				{
@@ -34,13 +34,13 @@ public static class LoggingBuilderExtensions
 					);
 				}
 			);
-			builder.Services.AddScoped<ChannelWriter<LogEvent>>(sp =>
+			builder.Services.AddSingleton<ChannelWriter<LogEvent>>(sp =>
 				{
 					Channel<LogEvent> channel = sp.GetRequiredService<Channel<LogEvent>>();
 					return channel.Writer;
 				}
 			);
-			builder.Services.AddScoped<ChannelReader<LogEvent>>(sp =>
+			builder.Services.AddSingleton<ChannelReader<LogEvent>>(sp =>
 				{
 					Channel<LogEvent> channel = sp.GetRequiredService<Channel<LogEvent>>();
 					return channel.Reader;

@@ -1,6 +1,9 @@
 using System.Threading.Channels;
 
+using LoggerSink.Options;
+
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace LoggerSink;
 
@@ -8,13 +11,19 @@ public sealed class Logger : ILogger, IDisposable
 {
 	private readonly string _categoryName;
 	private readonly ChannelWriter<LogEvent> _channel;
+	private readonly IOptionsMonitor<LogFilterOptions> _logFilterOptionsMonitor;
 	private readonly Stack<KeyValuePair<string, object>> _propertyScopes = new();
 	private readonly Stack<string> _scopes = new();
 
-	public Logger(string categoryName, ChannelWriter<LogEvent> channel)
+	public Logger(
+		string categoryName,
+		ChannelWriter<LogEvent> channel,
+		IOptionsMonitor<LogFilterOptions> logFilterOptionsMonitor
+	)
 	{
 		_categoryName = categoryName;
 		_channel = channel;
+		_logFilterOptionsMonitor = logFilterOptionsMonitor;
 	}
 
 	public void Dispose()
@@ -31,7 +40,35 @@ public sealed class Logger : ILogger, IDisposable
 		Func<TState, Exception?, string> formatter
 	)
 	{
-		// TODO: Implement log level filtering based on configuration
+		if (!IsEnabled(logLevel))
+		{
+			return;
+		}
+
+		List<KeyValuePair<string, object?>> properties = _propertyScopes
+			.Reverse()
+			.Select(property => new KeyValuePair<string, object?>(property.Key, property.Value))
+			.ToList();
+		string messageTemplate = formatter(state, exception);
+
+		if (state is IEnumerable<KeyValuePair<string, object?>> stateProperties)
+		{
+			foreach (KeyValuePair<string, object?> property in stateProperties)
+			{
+				if (string.Equals(property.Key, "{OriginalFormat}", StringComparison.Ordinal))
+				{
+					if (property.Value is string template)
+					{
+						messageTemplate = template;
+					}
+
+					continue;
+				}
+
+				properties.Add(property);
+			}
+		}
+
 		_channel.WriteAsync(
 			new LogEvent
 			{
@@ -39,8 +76,8 @@ public sealed class Logger : ILogger, IDisposable
 				LogLevel = logLevel,
 				CategoryName = _categoryName,
 				Exception = exception,
-				MessageTemplate = formatter(state, exception),
-				Properties = _propertyScopes.ToArray(), // TODo: state
+				MessageTemplate = messageTemplate,
+				Properties = properties,
 				Scopes = _scopes.ToArray()
 			}
 		).GetAwaiter().GetResult();
@@ -48,8 +85,7 @@ public sealed class Logger : ILogger, IDisposable
 
 	public bool IsEnabled(LogLevel logLevel)
 	{
-		// TODO: Implement log level filtering based on configuration
-		return true;
+		return _logFilterOptionsMonitor.CurrentValue.IsEnabled(_categoryName, logLevel);
 	}
 
 	public IDisposable? BeginScope<TState>(TState state) where TState : notnull
